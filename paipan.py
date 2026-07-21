@@ -354,20 +354,31 @@ def 查节气(年, 月, 日):
         return {'名称': '立春', '日期': datetime.datetime(年, 2, 4, 0, 0, 0)}
 
 
+from skyfield.api import Loader, Topos, utc
+from skyfield import almanac
+import datetime
+
 def 获取日出日落(经度, 纬度, 年, 月, 日):
     try:
-        观测点 = Observer()
-        观测点.lon = str(经度)
-        观测点.lat = str(纬度)
-        观测点.elevation = 0
-        观测点.date = f"{年}/{月}/{日}"
-        日出_utc = 观测点.next_rising(Sun())
-        日落_utc = 观测点.next_setting(Sun())
-        日出_local = 日出_utc.datetime() + datetime.timedelta(hours=8)
-        日落_local = 日落_utc.datetime() + datetime.timedelta(hours=8)
-        if 日落_local < 日出_local:
-            日落_local += datetime.timedelta(days=1)
-        return (日出_local, 日落_local)
+        # 加载天文数据
+        数据 = Loader('~/.skyfield-data')
+        星历 = 数据('de421.bsp')
+        地球 = 星历['earth']
+        太阳 = 星历['sun']
+
+        # 设置观测点
+        地点 = Topos(latitude_degrees=纬度, longitude_degrees=经度)
+        观测点 = 地球 + 地点
+
+        # 计算该天的日出日落
+        t0 = datetime.datetime(年, 月, 日, 0, 0, 0, tzinfo=utc)
+        t1 = datetime.datetime(年, 月, 日 + 1, 0, 0, 0, tzinfo=utc)
+        日出, 日落 = almanac.sunrise_sunset(星历, 观测点, t0, t1)
+
+        # 转换为本地时间（东八区）
+        日出本地 = 日出.astimezone(datetime.timezone(datetime.timedelta(hours=8)))
+        日落本地 = 日落.astimezone(datetime.timezone(datetime.timedelta(hours=8)))
+        return (日出本地, 日落本地)
     except Exception as e:
         print(f"⚠️ 日出日落计算失败：{e}")
         return None, None
