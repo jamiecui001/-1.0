@@ -8,9 +8,8 @@
 \f0\fs24 \cf0 # -*- coding: utf-8 -*-\
 import datetime\
 import cnlunar\
-from astral.sun import sun
-from astral import LocationInfo
-import datetime
+import ephem\
+from ephem import Observer, Sun\
 import re\
 import lunardate\
 import streamlit as st\
