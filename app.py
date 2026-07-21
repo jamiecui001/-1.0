@@ -471,11 +471,18 @@ def 校正时柱(经度, 纬度, 年, 月, 日, 时, 分, 年干):
         时干 = TIAN_GAN[(月干索引_base + 偏移) % 10]
         return f"{时干}{时支}"
     
-    # 确保日出日落是 naive datetime（无时区），便于比较
+    # 移除时区信息
     if hasattr(日出时间, 'tzinfo') and 日出时间.tzinfo is not None:
         日出时间 = 日出时间.replace(tzinfo=None)
     if hasattr(日落时间, 'tzinfo') and 日落时间.tzinfo is not None:
         日落时间 = 日落时间.replace(tzinfo=None)
+    
+    # 强制统一日期为出生日期（避免跨日比较问题）
+    基准日期 = datetime.date(年, 月, 日)
+    日出时间 = datetime.datetime(基准日期.year, 基准日期.month, 基准日期.day, 
+                                  日出时间.hour, 日出时间.minute, 日出时间.second)
+    日落时间 = datetime.datetime(基准日期.year, 基准日期.month, 基准日期.day, 
+                                  日落时间.hour, 日落时间.minute, 日落时间.second)
     
     白天时长 = (日落时间 - 日出时间).total_seconds()
     if 白天时长 <= 0:
