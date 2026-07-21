@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
 import cnlunar
-import ephem
-from ephem import Observer, Sun
+from skyfield.api import Loader, Topos, utc
+from skyfield import almanac
 import re
 import lunardate
 
