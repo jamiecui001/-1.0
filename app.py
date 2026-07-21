@@ -2,8 +2,65 @@ import streamlit as st
 import pandas as pd
 import sys
 import io
+import datetime
 from contextlib import redirect_stdout
 from paipan import 排盘, 地名转经纬度, 解析时辰, 农历转公历
+import paipan as paipan_module
+
+# ===== 修复：用 ephem 重新实现获取日出日落 =====
+try:
+    from ephem import Observer, Sun
+    def 获取日出日落_修正(经度, 纬度, 年, 月, 日):
+        try:
+            观测点 = Observer()
+            观测点.lon = str(经度)
+            观测点.lat = str(纬度)
+            观测点.elevation = 0
+            观测点.date = f"{年}/{月}/{日}"
+            日出_utc = 观测点.next_rising(Sun())
+            日落_utc = 观测点.next_setting(Sun())
+            日出_local = 日出_utc.datetime() + datetime.timedelta(hours=8)
+            日落_local = 日落_utc.datetime() + datetime.timedelta(hours=8)
+            if 日落_local < 日出_local:
+                日落_local += datetime.timedelta(days=1)
+            return (日出_local, 日落_local)
+        except Exception as e:
+            print(f"⚠️ 日出日落计算失败：{e}")
+            return None, None
+except ImportError:
+    # ephem 没装，用 astral
+    try:
+        from astral.sun import sun
+        from astral import LocationInfo
+        def 获取日出日落_修正(经度, 纬度, 年, 月, 日):
+            try:
+                地点 = LocationInfo()
+                地点.longitude = 经度
+                地点.latitude = 纬度
+                地点.timezone = "Asia/Shanghai"
+                日期 = datetime.date(年, 月, 日)
+                日出 = sun(地点.observer, date=日期, tzinfo=地点.timezone)['sunrise']
+                日落 = sun(地点.observer, date=日期, tzinfo=地点.timezone)['sunset']
+                if hasattr(日出, 'tzinfo') and 日出.tzinfo is not None:
+                    日出 = 日出.replace(tzinfo=None)
+                if hasattr(日落, 'tzinfo') and 日落.tzinfo is not None:
+                    日落 = 日落.replace(tzinfo=None)
+                基准日期 = datetime.date(年, 月, 日)
+                日出 = datetime.datetime(基准日期.year, 基准日期.month, 基准日期.day,
+                                          日出.hour, 日出.minute, 日出.second)
+                日落 = datetime.datetime(基准日期.year, 基准日期.month, 基准日期.day,
+                                          日落.hour, 日落.minute, 日落.second)
+                return (日出, 日落)
+            except Exception as e:
+                print(f"⚠️ 日出日落计算失败：{e}")
+                return None, None
+    except ImportError:
+        def 获取日出日落_修正(经度, 纬度, 年, 月, 日):
+            print("⚠️ 无法计算日出日落，使用北京时间近似")
+            return None, None
+
+# ===== 替换 paipan 模块中的 获取日出日落 =====
+paipan_module.获取日出日落 = 获取日出日落_修正
 
 st.set_page_config(
     page_title="盲派命理排盘系统",
@@ -16,7 +73,6 @@ st.markdown("支持公历/农历输入，真太阳时校正")
 
 # ===== 包装排盘函数，捕获 print 输出作为日志 =====
 def 排盘_带日志(年, 月, 日, 时, 分, 地名, 性别):
-    # 创建一个 StringIO 对象来捕获 print 输出
     日志缓冲区 = io.StringIO()
     with redirect_stdout(日志缓冲区):
         结果, 错误 = 排盘(年, 月, 日, 时, 分, 地名, 性别)
@@ -76,7 +132,6 @@ if st.button("🧧 开始排盘", type="primary", use_container_width=True):
                 st.error("农历转换失败，请检查输入")
                 st.stop()
 
-        # ===== 使用带日志的包装函数 =====
         结果, 错误 = 排盘_带日志(年, 月, 日, 时, 分, 地名, 性别)
 
         if 错误:
