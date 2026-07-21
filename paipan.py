@@ -320,28 +320,49 @@ def 查万年历(年, 月, 日):
 
 
 def 获取当年节气列表(年):
-    """获取指定年份12个节（立春、惊蛰...小寒）的精确日期时间（含时分秒）"""
+    """
+    获取指定年份12个节（立春...小寒）的精确日期时间（含时分秒）
+    返回 datetime 列表，每个元素包含精确的年月日时分秒
+    """
     节列表 = []
     for i, 名 in enumerate(JIE_LING_NAME):
         try:
-            if i == 11:
+            # 小寒查询次年1月，其他查询当年对应月份
+            if 名 == '小寒':
                 dt = datetime.datetime(年 + 1, 1, 1)
             else:
                 dt = datetime.datetime(年, JIE_LING_APPROX[i][0], 1)
+            
             农历 = cnlunar.Lunar(dt, godType='8char')
+            
+            # 通过 getSolarTermsDateList 获取该月所有节气的精确时间
             if hasattr(农历, 'getSolarTermsDateList'):
                 全部 = 农历.getSolarTermsDateList()
                 if 全部:
+                    # 遍历节气列表，匹配名称
                     for item in 全部:
+                        # item 结构: (datetime, name, type) 或 (datetime, name)
                         if isinstance(item, tuple) and len(item) >= 2:
                             if item[1] == 名:
                                 节列表.append(item[0])
                                 break
+                    # 如果已经找到12个，跳出
                     if len(节列表) == i + 1:
                         continue
-            节列表.append(datetime.datetime(年, JIE_LING_APPROX[i][0], JIE_LING_APPROX[i][1]))
-        except:
-            节列表.append(datetime.datetime(年, JIE_LING_APPROX[i][0], JIE_LING_APPROX[i][1]))
+            
+            # 如果精确查找失败，fallback：小寒用次年1月6日，其他用近似日期
+            if 名 == '小寒':
+                节列表.append(datetime.datetime(年 + 1, 1, 6))
+            else:
+                节列表.append(datetime.datetime(年, JIE_LING_APPROX[i][0], JIE_LING_APPROX[i][1]))
+                
+        except Exception as e:
+            # 出错时使用 fallback
+            if 名 == '小寒':
+                节列表.append(datetime.datetime(年 + 1, 1, 6))
+            else:
+                节列表.append(datetime.datetime(年, JIE_LING_APPROX[i][0], JIE_LING_APPROX[i][1]))
+    
     return 节列表
 
 
