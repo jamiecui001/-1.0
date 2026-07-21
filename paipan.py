@@ -355,20 +355,31 @@ def 查节气(年, 月, 日):
 
 
 def 获取日出日落(经度, 纬度, 年, 月, 日):
-    观测点 = Observer()
-    观测点.lon = str(经度)
-    观测点.lat = str(纬度)
-    观测点.elevation = 0
-    观测点.date = f"{年}/{月}/{日}"
     try:
-        日出_utc = 观测点.next_rising(Sun())
-        日落_utc = 观测点.next_setting(Sun())
-        日出_local = 日出_utc.datetime() + datetime.timedelta(hours=8)
-        日落_local = 日落_utc.datetime() + datetime.timedelta(hours=8)
-        if 日落_local < 日出_local:
-            日落_local += datetime.timedelta(days=1)
-        return (日出_local, 日落_local)
-    except:
+        地点 = LocationInfo()
+        地点.longitude = 经度
+        地点.latitude = 纬度
+        地点.timezone = "Asia/Shanghai"
+        日期 = datetime.date(年, 月, 日)
+        日出 = sun(地点.observer, date=日期, tzinfo=地点.timezone)['sunrise']
+        日落 = sun(地点.observer, date=日期, tzinfo=地点.timezone)['sunset']
+        
+        # ===== 关键修复：移除时区信息，统一日期 =====
+        if hasattr(日出, 'tzinfo') and 日出.tzinfo is not None:
+            日出 = 日出.replace(tzinfo=None)
+        if hasattr(日落, 'tzinfo') and 日落.tzinfo is not None:
+            日落 = 日落.replace(tzinfo=None)
+        
+        # 强制统一为出生日期（避免跨日问题）
+        基准日期 = datetime.date(年, 月, 日)
+        日出 = datetime.datetime(基准日期.year, 基准日期.month, 基准日期.day,
+                                  日出.hour, 日出.minute, 日出.second)
+        日落 = datetime.datetime(基准日期.year, 基准日期.month, 基准日期.day,
+                                  日落.hour, 日落.minute, 日落.second)
+        
+        return (日出, 日落)
+    except Exception as e:
+        print(f"⚠️ 日出日落计算失败：{e}")
         return None, None
 
 
