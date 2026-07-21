@@ -465,11 +465,13 @@ def 校正时柱(经度, 纬度, 年, 月, 日, 时, 分, 年干):
         时干 = TIAN_GAN[(月干索引_base + 偏移) % 10]
         return f"{时干}{时支}"
     
+    # 移除时区信息
     if hasattr(日出时间, 'tzinfo') and 日出时间.tzinfo is not None:
         日出时间 = 日出时间.replace(tzinfo=None)
     if hasattr(日落时间, 'tzinfo') and 日落时间.tzinfo is not None:
         日落时间 = 日落时间.replace(tzinfo=None)
     
+    # 强制统一日期为出生日期
     基准日期 = datetime.date(年, 月, 日)
     日出时间 = datetime.datetime(基准日期.year, 基准日期.month, 基准日期.day,
                                   日出时间.hour, 日出时间.minute, 日出时间.second)
@@ -513,6 +515,7 @@ def 校正时柱(经度, 纬度, 年, 月, 日, 时, 分, 年干):
                 校正地支 = 区间['地支']
                 break
     
+    # ===== 五虎遁推时干（与本地完全一致） =====
     月干起点 = WU_HU.get(年干, '丙')
     月干索引_base = TIAN_GAN.index(月干起点)
     时支索引 = DI_ZHI.index(校正地支)
@@ -520,7 +523,6 @@ def 校正时柱(经度, 纬度, 年, 月, 日, 时, 分, 年干):
     时干 = TIAN_GAN[(月干索引_base + 偏移) % 10]
     
     return f"{时干}{校正地支}"
-
 
 def 子时换日(时柱, 日柱, 年, 月, 日):
     if 时柱[1] == '子':
