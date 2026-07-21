@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+import sys
+import io
+from contextlib import redirect_stdout
 from paipan import 排盘, 地名转经纬度, 解析时辰, 农历转公历
 
 st.set_page_config(
@@ -10,6 +13,18 @@ st.set_page_config(
 
 st.title("🧧 盲派命理排盘系统")
 st.markdown("支持公历/农历输入，真太阳时校正")
+
+# ===== 包装排盘函数，捕获 print 输出作为日志 =====
+def 排盘_带日志(年, 月, 日, 时, 分, 地名, 性别):
+    # 创建一个 StringIO 对象来捕获 print 输出
+    日志缓冲区 = io.StringIO()
+    with redirect_stdout(日志缓冲区):
+        结果, 错误 = 排盘(年, 月, 日, 时, 分, 地名, 性别)
+    日志内容 = 日志缓冲区.getvalue()
+    
+    if 结果 is not None:
+        结果['日志'] = 日志内容
+    return 结果, 错误
 
 st.markdown("---")
 st.subheader("📋 输入出生信息")
@@ -61,7 +76,8 @@ if st.button("🧧 开始排盘", type="primary", use_container_width=True):
                 st.error("农历转换失败，请检查输入")
                 st.stop()
 
-        结果, 错误 = 排盘(年, 月, 日, 时, 分, 地名, 性别)
+        # ===== 使用带日志的包装函数 =====
+        结果, 错误 = 排盘_带日志(年, 月, 日, 时, 分, 地名, 性别)
 
         if 错误:
             st.error(错误)
