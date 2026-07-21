@@ -458,7 +458,6 @@ def 校正月柱(年, 月, 日, 纬度, 年干):
     校正月 = f"{月干}{月支}"
     return 校正月, 调整后节令
 
-
 def 校正时柱(经度, 纬度, 年, 月, 日, 时, 分, 年干):
     日出时间, 日落时间 = 获取日出日落(经度, 纬度, 年, 月, 日)
     
@@ -471,13 +470,11 @@ def 校正时柱(经度, 纬度, 年, 月, 日, 时, 分, 年干):
         时干 = TIAN_GAN[(月干索引_base + 偏移) % 10]
         return f"{时干}{时支}"
     
-    # 移除时区信息
     if hasattr(日出时间, 'tzinfo') and 日出时间.tzinfo is not None:
         日出时间 = 日出时间.replace(tzinfo=None)
     if hasattr(日落时间, 'tzinfo') and 日落时间.tzinfo is not None:
         日落时间 = 日落时间.replace(tzinfo=None)
     
-    # 强制统一日期为出生日期
     基准日期 = datetime.date(年, 月, 日)
     日出时间 = datetime.datetime(基准日期.year, 基准日期.month, 基准日期.day,
                                   日出时间.hour, 日出时间.minute, 日出时间.second)
@@ -529,7 +526,6 @@ def 校正时柱(经度, 纬度, 年, 月, 日, 时, 分, 年干):
     
     return f"{时干}{校正地支}"
 
-
 def 子时换日(时柱, 日柱, 年, 月, 日):
     if 时柱[1] == '子':
         新日期 = datetime.datetime(年, 月, 日) + datetime.timedelta(days=1)
@@ -555,7 +551,6 @@ def 计算命宫(月支, 时支):
     bu_shu = (mao_index - shi_zhi_index) % 12
     ming_gong_index = (qi_dian_index + bu_shu) % 12
     return DI_ZHI[ming_gong_index]
-
 
 def 计算身宫(月支, 时支):
     月支索引 = DI_ZHI.index(月支)
